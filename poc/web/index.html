@@ -1,0 +1,376 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Jev Docs Router</title>
+<style>
+  :root {
+    --bg: #fafaf9; --panel: #ffffff; --text: #1c1917; --muted: #78716c; --line: #e7e5e4;
+    --accent: #2563eb; --accent-soft: #dbeafe; --warn: #b45309; --warn-soft: #fef3c7;
+    --bar: #cbd5e1; --bar-chosen: #2563eb; --code: #f5f5f4;
+    --good: #15803d; --good-soft: #dcfce7; --bad: #b91c1c; --bad-soft: #fee2e2;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #0c0a09; --panel: #1c1917; --text: #f5f5f4; --muted: #a8a29e; --line: #292524;
+      --accent: #60a5fa; --accent-soft: #1e3a5f; --warn: #fbbf24; --warn-soft: #422006;
+      --bar: #44403c; --bar-chosen: #60a5fa; --code: #292524;
+      --good: #4ade80; --good-soft: #14321f; --bad: #f87171; --bad-soft: #3b1414;
+    }
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--text);
+         font: 15px/1.5 system-ui, -apple-system, "Segoe UI", sans-serif; }
+  main { max-width: 1280px; margin: 0 auto; padding: 20px 16px 60px; }
+  header { display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap; margin-bottom: 16px; }
+  h1 { font-size: 20px; margin: 0; }
+  h2 { font-size: 16px; margin: 0 0 8px; }
+  h3 { font-size: 14px; margin: 16px 0 4px; }
+  .muted { color: var(--muted); }
+  .small { font-size: 13px; }
+  .badge { font-size: 12px; padding: 2px 8px; border-radius: 99px; border: 1px solid var(--line); }
+  .badge.mock { background: var(--warn-soft); color: var(--warn); border-color: transparent; }
+  .badge.live { background: var(--accent-soft); color: var(--accent); border-color: transparent; }
+  .panel { background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 16px; }
+  .layout { display: grid; grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr); gap: 16px; align-items: start; }
+  @media (max-width: 900px) { .layout { grid-template-columns: minmax(0, 1fr); } }
+  form { display: flex; gap: 8px; flex-wrap: wrap; }
+  input[type=text] { flex: 1 1 320px; min-width: 0; padding: 9px 12px; font: inherit; color: inherit;
+                     background: var(--bg); border: 1px solid var(--line); border-radius: 6px; }
+  select { padding: 8px; font: inherit; color: inherit; background: var(--bg);
+           border: 1px solid var(--line); border-radius: 6px; max-width: 100%; }
+  button { padding: 9px 16px; font: inherit; font-weight: 600; border: 0; border-radius: 6px;
+           background: var(--accent); color: #fff; cursor: pointer; }
+  button:disabled { opacity: .6; cursor: wait; }
+  .row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin-top: 10px; }
+  #answer { margin-top: 16px; }
+  .route { font-family: ui-monospace, monospace; font-size: 14px; background: var(--code);
+           padding: 2px 6px; border-radius: 4px; word-break: break-all; }
+  .answer-text { margin: 12px 0 0; padding: 12px; background: var(--bg);
+                 border-left: 3px solid var(--accent); border-radius: 4px; }
+  .step { margin-top: 12px; }
+  .step-head { display: flex; justify-content: space-between; gap: 8px; flex-wrap: wrap; }
+  .step-num { display: inline-block; width: 22px; height: 22px; line-height: 22px; text-align: center;
+              border-radius: 50%; background: var(--accent); color: #fff; font-size: 12px; font-weight: 700; margin-right: 6px; }
+  .asked { font-size: 13px; color: var(--muted); margin: 6px 0 10px; }
+  .warn { background: var(--warn-soft); color: var(--warn); padding: 6px 10px; border-radius: 6px; font-size: 13px; margin: 8px 0; }
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  td { padding: 5px 6px; border-top: 1px solid var(--line); vertical-align: top; }
+  td.label { font-family: ui-monospace, monospace; white-space: nowrap; }
+  td.p { text-align: right; font-variant-numeric: tabular-nums; width: 52px; }
+  td.barcell { width: 32%; min-width: 90px; }
+  .bar { height: 10px; border-radius: 3px; background: var(--bar); margin-top: 5px; min-width: 1px; }
+  tr.chosen td { font-weight: 600; }
+  tr.chosen .bar { background: var(--bar-chosen); }
+  details summary { cursor: pointer; color: var(--muted); font-size: 12px; white-space: nowrap; }
+  details p { margin: 4px 0 0; color: var(--muted); }
+  .meta { font-size: 12px; color: var(--muted); }
+  table.cost td { border-top: 1px solid var(--line); }
+  .tag { margin-left: 6px; font-family: system-ui, sans-serif; font-size: 11px; font-weight: 500; color: var(--accent);
+         border: 1px solid var(--accent); border-radius: 99px; padding: 0 6px; }
+  .candidate { border: 1px solid var(--line); border-radius: 6px; padding: 10px; margin-top: 10px; }
+  .candidate.picked { border-color: var(--accent); }
+  .bar.fail { background: var(--bad); }
+  td.pass { color: var(--good); white-space: nowrap; font-weight: 600; }
+  td.failtext { color: var(--bad); white-space: nowrap; }
+  .decision { background: var(--good-soft); color: var(--good); padding: 6px 10px; border-radius: 6px; font-size: 13px; margin: 10px 0 0; }
+  .badge.ok { background: var(--good-soft); color: var(--good); border-color: transparent; vertical-align: middle; }
+  .badge.bad { background: var(--bad-soft); color: var(--bad); border-color: transparent; vertical-align: middle; }
+  .answer-text.unverified { border-left-color: var(--bad); }
+  table.cost td.k { white-space: nowrap; color: var(--muted); width: 1%; }
+  table.cost td.v { white-space: nowrap; font-weight: 600; font-variant-numeric: tabular-nums; width: 1%; padding-right: 14px; }
+  .doc-summary { color: var(--muted); }
+  .doc-index { padding-left: 20px; margin: 4px 0; }
+  .doc-index li { margin: 2px 0; }
+  .doc-index a { color: var(--accent); text-decoration: none; }
+  .section { padding: 8px 10px; margin: 8px -10px; border-radius: 6px; }
+  .section.hit { background: var(--accent-soft); }
+  .section-body { font-size: 14px; }
+  .section-body p, .answer-text p { margin: 6px 0; }
+  table.md { margin: 6px 0; }
+  table.md th { text-align: left; font-weight: 600; padding: 5px 6px; }
+  code { font-family: ui-monospace, monospace; font-size: 13px; background: var(--code); padding: 1px 4px; border-radius: 3px; }
+  .error { color: #dc2626; }
+  .sticky { position: sticky; top: 12px; max-height: calc(100vh - 24px); overflow: auto; }
+  @media (max-width: 900px) { .sticky { position: static; max-height: none; } }
+  @media (max-width: 600px) { td.barcell { min-width: 36px; width: 22%; } details summary { white-space: normal; } td.label { white-space: normal; word-break: break-word; } }
+</style>
+</head>
+<body>
+<main>
+  <header>
+    <h1>Jev docs router</h1>
+    <span id="mode" class="badge">…</span>
+    <span class="muted small">question → product or engineering → top two files → section in each → is it relevant?</span>
+  </header>
+
+  <div class="layout">
+    <section>
+      <div class="panel">
+        <form id="ask">
+          <input id="question" type="text" placeholder="e.g. Why do we have 20 copies of Book A in inventory?" autocomplete="off" autofocus>
+          <button id="go" type="submit">Ask</button>
+        </form>
+        <div class="row">
+          <label class="small muted" for="examples">Try an example</label>
+          <select id="examples"><option value="">…</option></select>
+        </div>
+      </div>
+      <div id="answer"></div>
+    </section>
+
+    <aside class="panel sticky">
+      <div class="row" style="margin-top:0">
+        <label for="docpick"><strong>Docs</strong></label>
+        <select id="docpick"></select>
+        <span id="doccount" class="small muted"></span>
+      </div>
+      <div id="doc"></div>
+    </aside>
+  </div>
+</main>
+
+<script>
+const $ = (id) => document.getElementById(id);
+let DOCS = [];
+
+// Build DOM without innerHTML so nothing from the docs or the API is ever parsed as HTML.
+function h(tag, attrs, ...kids) {
+  const el = document.createElement(tag);
+  for (const [k, v] of Object.entries(attrs || {})) {
+    if (k === "class") el.className = v;
+    else if (k === "style") el.style.cssText = v;
+    else if (k.startsWith("on")) el.addEventListener(k.slice(2), v);
+    else el.setAttribute(k, v);
+  }
+  for (const kid of kids.flat()) if (kid != null && kid !== false) el.append(kid.nodeType ? kid : String(kid));
+  return el;
+}
+
+// Inline `code` spans only; everything else stays plain text.
+function richText(text) {
+  const out = [];
+  text.split(/(`[^`]+`)/).forEach((part) => {
+    out.push(part.startsWith("`") && part.endsWith("`") && part.length > 1 ? h("code", {}, part.slice(1, -1)) : part);
+  });
+  return out;
+}
+
+// Section bodies: blank-line paragraphs (source line breaks folded), and pipe tables.
+function renderBody(text) {
+  return text.split(/\n\s*\n/).filter((b) => b.trim()).map((block) => {
+    const lines = block.split("\n").map((l) => l.trim());
+    if (lines.every((l) => l.startsWith("|"))) {
+      const cells = (l) => l.replace(/^\||\|$/g, "").split("|").map((c) => c.trim());
+      const rows = lines.filter((l) => !/^\|[\s:|-]+\|$/.test(l)).map(cells);
+      return h("table", { class: "md" },
+        h("thead", {}, h("tr", {}, rows[0].map((c) => h("th", {}, richText(c))))),
+        h("tbody", {}, rows.slice(1).map((r) => h("tr", {}, r.map((c) => h("td", {}, richText(c)))))));
+    }
+    return h("p", {}, richText(lines.join(" ")));
+  });
+}
+
+// Scroll the docs panel (not the page) to a section; on narrow screens the panel is not sticky.
+function jumpTo(anchor) {
+  const el = $("sec-" + anchor), box = document.querySelector("aside");
+  if (!el) return;
+  if (getComputedStyle(box).position === "sticky") box.scrollTo({ top: el.offsetTop - 12, behavior: "smooth" });
+  else el.scrollIntoView({ behavior: "smooth", block: "start" });
+}
+
+// Money in rupees with 3 significant digits (a route costs a fraction of a paisa), time in ms or s.
+const INR = new Intl.NumberFormat("en-IN", { style: "currency", currency: "INR", maximumSignificantDigits: 3 });
+const inr = (x) => (x > 0 ? INR.format(x) : "₹0");
+const usd = (x) => "$" + (x > 0 ? x.toPrecision(3) : "0");
+const dur = (ms) => (ms >= 1000 ? (ms / 1000).toFixed(2) + " s" : ms.toFixed(ms < 10 ? 1 : 0) + " ms");
+const num = (n) => n.toLocaleString("en-IN");
+
+function costTable(r) {
+  const p = r.pricing, est = r.estimated_tokens ? " (estimated: mock)" : "";
+  const row = (k, v, note) => h("tr", {}, h("td", { class: "k" }, k), h("td", { class: "v" }, v), h("td", { class: "meta" }, note || ""));
+  return h("table", { class: "cost" }, h("tbody", {},
+    row("Total time", dur(r.browser_ms), "question sent → answer shown, measured in the browser"),
+    row("Server time", dur(r.total_ms), "reading the docs + the four Jev steps"),
+    row("Jev time", dur(r.jev_ms), r.steps.map((s) => s.step + " " + dur(s.ms)).join(" · ") + " (relevance checks run in parallel)"),
+    row("Input tokens", num(r.input_tokens) + est, r.steps.map((s) => s.step + " " + num(s.input_tokens)).join(" · ")),
+    row("Price", inr(r.cost_inr), "≈ " + usd(r.cost_inr / p.inr_per_usd) + " · " + r.steps.map((s) => s.step + " " + inr(s.cost_inr)).join(" · ")),
+    row("Per 1,000 questions", inr(r.cost_inr * 1000), "at this question's token count"),
+    h("tr", {}, h("td", { colspan: 3, class: "meta" },
+      "Rate: $" + p.usd_per_million_input + " per million input tokens, output tokens free, ₹" + p.inr_per_usd + " per $ = " +
+      inr(p.inr_per_million_input) + " per million input tokens."))));
+}
+
+const pct = (p) => (p * 100).toFixed(p >= 0.995 || p < 0.005 ? 0 : 1) + "%";
+
+async function init() {
+  const res = await fetch("/api/docs");
+  const data = await res.json();
+  DOCS = data.docs;
+  const mode = $("mode");
+  mode.textContent = data.mode === "mock" ? "keyword mock (set JEV_API_KEY for real Jev)" : "live Jev API";
+  mode.className = "badge " + data.mode;
+
+  const pick = $("docpick");
+  pick.replaceChildren();
+  for (const domain of Object.keys(data.domains)) {
+    const group = h("optgroup", { label: domain });
+    DOCS.filter((d) => d.domain === domain).forEach((d) => group.append(h("option", { value: d.ref }, d.ref + ".md")));
+    pick.append(group);
+  }
+  $("doccount").textContent = DOCS.length + " files";
+  pick.onchange = () => showDoc(pick.value);
+  showDoc(DOCS[0].ref);
+
+  const ex = $("examples");
+  data.examples.forEach((q) => ex.append(h("option", { value: q }, q)));
+  ex.onchange = () => { if (ex.value) { $("question").value = ex.value; ask(); } };
+}
+
+function showDoc(ref, highlight) {
+  const d = DOCS.find((x) => x.ref === ref);
+  if (!d) return;
+  $("docpick").value = ref;
+  const index = h("ol", { class: "doc-index" },
+    d.sections.map((s) => h("li", {},
+      h("a", { href: "#sec-" + s.anchor, onclick: (e) => { e.preventDefault(); jumpTo(s.anchor); } }, s.title),
+      h("span", { class: "muted" }, " — " + s.blurb))));
+  const sections = d.sections.map((s) =>
+    h("div", { class: "section" + (s.anchor === highlight ? " hit" : ""), id: "sec-" + s.anchor },
+      h("h3", { style: "margin-top:0" }, s.title, s.anchor === highlight ? h("span", { class: "muted small" }, "  ← routed here") : null),
+      h("div", { class: "section-body" }, renderBody(s.body))));
+  $("doc").replaceChildren(
+    h("h2", { style: "margin-top:12px" }, d.title),
+    h("p", { class: "doc-summary" }, d.summary),
+    d.related ? h("p", { class: "meta" }, "Related: " + d.related) : null,
+    h("div", { class: "meta" }, "Index"), index,
+    ...sections);
+  if (highlight) setTimeout(() => jumpTo(highlight), 50);
+  else document.querySelector("aside").scrollTo({ top: 0 });
+}
+
+async function ask() {
+  const question = $("question").value.trim();
+  if (!question) return;
+  $("go").disabled = true;
+  $("answer").replaceChildren(h("p", { class: "muted" }, "Routing…"));
+  try {
+    const t0 = performance.now();
+    const res = await fetch("/api/route", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ question }) });
+    const data = await res.json();
+    data.browser_ms = performance.now() - t0;
+    if (!res.ok) throw new Error(data.error || res.statusText);
+    history.replaceState(null, "", "?q=" + encodeURIComponent(question));
+    renderRoute(data);
+    showDoc(data.doc, data.section);
+  } catch (err) {
+    $("answer").replaceChildren(h("div", { class: "panel error" }, "Failed: " + err.message));
+  } finally {
+    $("go").disabled = false;
+  }
+}
+
+const STEP_TITLES = {
+  domain: () => "Product or engineering?",
+  file: (r) => "Which file in " + r.steps[0].chosen + "/ ?",
+  section: (r) => "Which section, inside the top " + r.steps[2].candidates.length + " files?",
+  relevance: () => "Is this section relevant to the question?",
+};
+const STEP_SOURCE = {
+  domain: "Options are the two domain descriptions (docs/<domain>/README.md).",
+  file: "Options are each file's summary: the 2–5 lines under its title. The top two go on to the next step.",
+  section: "One request, one Choice per file. Options are that file's ## Index entries. Score = P(file) × P(section).",
+  relevance: "One yes/no request per candidate, run in parallel. Jev reads the question together with the section's full text.",
+};
+
+// A probability table: one row per option, the chosen one highlighted, "what Jev read" folded away.
+function optionTable(options, chosen, tag) {
+  return h("table", {}, h("tbody", {}, options.map((o) =>
+    h("tr", { class: o.label === chosen ? "chosen" : "" },
+      h("td", { class: "label" }, o.label === chosen ? "▸ " + o.label : o.label,
+        tag && tag(o) ? h("span", { class: "tag" }, tag(o)) : null),
+      h("td", { class: "barcell" }, h("div", { class: "bar", style: "width:" + Math.max(o.probability * 100, 0.5) + "%" })),
+      h("td", { class: "p" }, pct(o.probability)),
+      h("td", {}, h("details", {}, h("summary", {}, "what Jev read"), h("p", {}, o.description)))))));
+}
+
+function stepHead(i, s, r, facts) {
+  return [
+    h("div", { class: "step-head" },
+      h("h2", {}, h("span", { class: "step-num" }, i + 1), STEP_TITLES[s.step](r)),
+      h("span", { class: "meta" }, facts, " · " + dur(s.ms) + " · " + num(s.input_tokens) + " tokens · " + inr(s.cost_inr))),
+    h("div", { class: "asked" }, s.instructions ? "Asked: “" + s.instructions + "” " : null, s.instructions ? h("br") : null, STEP_SOURCE[s.step]),
+  ];
+}
+
+function renderChoiceStep(s, i, r) {
+  const checked = s.checked || [];
+  return h("div", { class: "panel step" },
+    ...stepHead(i, s, r, ["chose ", h("strong", {}, s.chosen), " · p " + pct(s.probability) + " · confidence " + pct(s.confidence)]),
+    s.low_confidence ? h("div", { class: "warn" }, "Low confidence: " + s.options[0].label + " " + pct(s.options[0].probability) + " vs " + s.options[1].label + " " + pct(s.options[1].probability)) : null,
+    optionTable(s.options, s.chosen, (o) => (checked.includes(o.label) ? "checked next" : "")));
+}
+
+function renderSectionsStep(s, i, r) {
+  const best = Math.max(...s.candidates.map((c) => c.score));
+  const blocks = s.candidates.map((c) =>
+    h("div", { class: "candidate" + (c.file + "#" + c.chosen === r.route ? " picked" : "") },
+      h("div", { class: "step-head" },
+        h("h3", { style: "margin:0" }, c.file),
+        h("span", { class: "meta" }, "score ", h("strong", {}, pct(c.score)), " = file " + pct(c.file_probability) + " × section " + pct(c.probability),
+          c.score === best ? " · highest score" : "")),
+      c.low_confidence ? h("div", { class: "warn" }, "Low confidence inside this file: " + c.options[0].label + " " + pct(c.options[0].probability) + " vs " + c.options[1].label + " " + pct(c.options[1].probability)) : null,
+      optionTable(c.options, c.chosen)));
+  return h("div", { class: "panel step" },
+    ...stepHead(i, s, r, ["1 request · " + s.candidates.length + " files"]),
+    ...blocks);
+}
+
+function renderRelevanceStep(s, i, r) {
+  const rows = s.checks.map((c) =>
+    h("tr", { class: c.ref === r.route ? "chosen" : "" },
+      h("td", { class: "label" }, (c.ref === r.route ? "▸ " : "") + c.ref),
+      h("td", { class: "barcell" }, h("div", { class: "bar" + (c.relevant ? "" : " fail"), style: "width:" + Math.max(c.relevance * 100, 0.5) + "%" })),
+      h("td", { class: "p" }, pct(c.relevance)),
+      h("td", { class: c.relevant ? "pass" : "failtext" }, c.relevant ? "✓ relevant" : "✗ not relevant"),
+      h("td", { class: "meta", style: "white-space:nowrap" }, "score " + pct(c.score) + " · " + dur(c.ms))));
+  return h("div", { class: "panel step" },
+    ...stepHead(i, s, r, [s.requests + " requests in parallel · pass at " + pct(s.threshold)]),
+    h("div", { class: "asked" }, "Yes means: " + s.true_means + ". No means: " + s.false_means + "."),
+    h("table", {}, h("tbody", {}, rows)),
+    h("div", { class: r.verified ? "decision" : "warn" }, h("strong", {}, "Decision: "), s.selection));
+}
+
+function renderRoute(r) {
+  const weak = r.steps.slice(0, 2).filter((s) => s.low_confidence).map((s) => s.step);
+  const verdict = r.verified
+    ? h("span", { class: "badge ok" }, "✓ verified relevant " + pct(r.relevance))
+    : h("span", { class: "badge bad" }, "✗ unverified: relevance " + pct(r.relevance));
+  const final = h("div", { class: "panel" },
+    h("div", { class: "step-head" },
+      h("h2", {}, "Answer ", verdict),
+      h("span", { class: "meta" }, h("strong", {}, dur(r.browser_ms)), " · ", h("strong", {}, inr(r.cost_inr)),
+        " · " + r.requests + " requests · " + r.steps[0].model)),
+    h("div", {}, h("span", { class: "route" }, r.route)),
+    h("div", { class: "meta", style: "margin-top:6px" },
+      "Route probability " + pct(r.path_probability) + " = " + r.path_parts.map(pct).join(" × ") + " (domain × file × section), before reading the text"),
+    r.verified ? null : h("div", { class: "warn" }, r.selection + " Treat this answer as a lead, not an answer."),
+    weak.length ? h("div", { class: "warn" }, "Low confidence at " + weak.join(", ") + ": the top two options are close.") : null,
+    h("div", { class: "answer-text" + (r.verified ? "" : " unverified") }, h("strong", {}, r.section_title), renderBody(r.text)),
+    h("h3", {}, "Time and price"), costTable(r));
+
+  const render = { choice: renderChoiceStep, sections: renderSectionsStep, relevance: renderRelevanceStep };
+  $("answer").replaceChildren(final, ...r.steps.map((s, i) => render[s.kind](s, i, r)));
+}
+
+$("ask").addEventListener("submit", (e) => { e.preventDefault(); ask(); });
+init()
+  .then(() => {  // ?q=... asks straight away, so a route can be shared as a link
+    const q = new URLSearchParams(location.search).get("q");
+    if (q) { $("question").value = q; ask(); }
+  })
+  .catch((err) => $("doc").replaceChildren(h("p", { class: "error" }, "Could not load docs: " + err.message)));
+</script>
+</body>
+</html>

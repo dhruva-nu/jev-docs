@@ -1,0 +1,30 @@
+# Each line: a question and what a correct route looks like. Lists mean "any of these".
+# Keys: status (ok|ambiguous|not_documented), domain, file, section (anchor).
+{"question": "Why do we have 20 copies of Book A in inventory?", "domain": "product", "file": "inventory", "section": "book-a-minimum-stock"}
+{"question": "Which cron job keeps Book A restocked and how often does it run?", "domain": "engineering", "file": "inventory", "section": "book-a-restock-job"}
+{"question": "Why can't support see who bought Book B?", "domain": "product", "file": ["inventory", "permissions"], "section": ["book-b-buyer-anonymity", "who-may-see-customer-data"]}
+{"question": "What does the fulfilment hook delete when someone buys Book B?", "domain": "engineering", "file": "inventory", "section": "book-b-anonymisation"}
+{"question": "What columns are in the stock_events table?", "domain": "engineering", "file": "inventory", "section": "tables"}
+{"question": "What does POST /stock/{isbn}/adjust return when the result would go negative?", "domain": "engineering", "file": "inventory", "section": "api-contracts"}
+{"question": "Why does every order get 7% off? Is the founders discount a bug?", "domain": "product", "file": "pricing", "section": "the-7-founders-discount"}
+{"question": "Where in the code is the 7% founders discount hard-coded?", "domain": "engineering", "file": "pricing", "section": "founders-discount-in-code"}
+{"question": "Why do all our prices end in .99?", "domain": "product", "file": "pricing", "section": "rounding"}
+{"question": "Can two discount codes stack on one order?", "domain": "product", "file": "pricing", "section": "discount-rules"}
+{"question": "Why was this customer recommended a book they already own?", "domain": "product", "file": "recommendations", "section": "never-recommend-rules"}
+{"question": "Where does the recommendation service filter out Book B and out-of-stock titles?", "domain": "engineering", "file": "recommendations", "section": "exclusion-filter"}
+{"question": "What does a brand new customer with no history see in recommendations?", "domain": "product", "file": "recommendations", "section": "new-customers-and-cold-start"}
+{"question": "How is a new recommendation model promoted after nightly training?", "domain": "engineering", "file": "recommendations", "section": "retraining"}
+{"question": "If I edit a note on my phone and tablet while offline, which one wins?", "domain": "product", "file": "offline-reading", "section": "conflicts-between-devices"}
+{"question": "How does the sync protocol merge concurrent annotation edits with version vectors?", "domain": "engineering", "file": "offline-sync", "section": "conflict-resolution"}
+{"question": "Why do downloaded books expire after 30 days offline?", "domain": "product", "file": "offline-reading", "section": "downloads-and-expiry"}
+{"question": "Why does the daily sales report never show today's numbers?", "domain": "product", "file": "reporting", "section": "why-numbers-lag-a-day"}
+{"question": "How do I rerun the nightly reconciliation for one date?", "domain": "engineering", "file": "reconciliation", "section": "idempotency-and-reruns"}
+{"question": "The report says 22 copies of Book A but the warehouse counted 18. Which number is right?", "domain": "product", "file": "reporting", "section": "which-number-wins"}
+{"question": "What is our uptime SLA for the storefront?", "domain": "product", "file": "reliability", "section": "the-availability-promise"}
+{"question": "How do I roll back a bad storefront deploy?", "domain": "engineering", "file": "on-call", "section": "rollback-runbook"}
+{"question": "Is a Book B data leak a severity 1 incident?", "domain": "engineering", "file": "on-call", "section": "severity-ladder"}
+{"question": "Why can't an admin grant themselves commercial rights?", "domain": "product", "file": "permissions", "section": "admin-limits"}
+{"question": "Where is the audit log stored and how long is it kept?", "domain": ["engineering", "product"], "file": "permissions", "section": ["audit-log", "audit-promise"]}
+{"question": "Why do we keep 20 copies of Book A and how is that enforced in code?", "domain": "product", "file": "inventory", "section": ["book-a-minimum-stock", "book-a-restock-job"]}
+{"question": "What's the weather in Bangalore tomorrow?", "status": "not_documented"}
+{"question": "Book me a flight to Tokyo", "status": "not_documented"}
